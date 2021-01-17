@@ -64,6 +64,16 @@ class APIModern:
         for key, data in self.files.items():
             self.files[key] = self.json_to_str(data)
             self.files[key] = self.remove_syntax(data)
+            self.files[key] = self.divide_list(data)
+
+    def _prepare_for_files(self):
+        """
+        For each files get the json from the string list
+        :return:
+        """
+        for key, data in self.files.items():
+            self.files[key] = self.concat_list(data)
+            self.files[key] = self.add_syntax(data)
             self.files[key] = self.str_to_json(data)
 
     @staticmethod
@@ -189,5 +199,15 @@ class APIModern:
             new_content.append(data['content'][begin:end])
 
         data['content'] = new_content
+
+        return data
+
+    @staticmethod
+    def concat_list(data):
+        """
+        Concat all list to one list
+        :return:
+        """
+        data['content'] = [content for contents in data['content'] for content in contents]
 
         return data

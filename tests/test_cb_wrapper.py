@@ -215,3 +215,27 @@ def test_add_syntax(data, expected_result):
 ])
 def test_divide_list(data, expected_result):
     assert wrapper.divide_list(data) == expected_result
+
+
+@pytest.mark.parametrize("data, expected_result", [
+    (
+
+            {
+                'content': [['test', 'simple text', 'header', 'sub', 'sub text']],
+            },
+            {
+                'content': ['test', 'simple text', 'header', 'sub', 'sub text'],
+            }
+    ),
+    (
+
+            {
+                'content': [[i for i in range(0, 128)], [i for i in range(128, 256)], [i for i in range(256, 300)]],
+            },
+            {
+                'content': [i for i in range(0, 300)],
+            }
+    )
+])
+def test_concat_list(data, expected_result):
+    assert wrapper.concat_list(data) == expected_result
