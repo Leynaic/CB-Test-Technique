@@ -158,3 +158,36 @@ class APIModern:
         data['content'] = new_content
 
         return data
+
+    @staticmethod
+    def add_syntax(data):
+        """
+        Add syntax previously removed into the list
+        :return:
+        """
+        for index, content in data['syntax_memories'].items():
+            data['content'].insert(index, content)
+
+        del data['syntax_memories']  # Remove unnecessary dictionary key
+        return data
+
+    @staticmethod
+    def divide_list(data):
+        """
+        Divide a long list to multiple list to call API
+        :return:
+        """
+        max_list_size = 128
+
+        new_content = []
+        length = len(data['content'])
+        slice_count = (length // max_list_size) + 1
+
+        for i in range(0, slice_count):
+            begin = max_list_size * i
+            end = begin + max_list_size if begin + max_list_size < length else length
+            new_content.append(data['content'][begin:end])
+
+        data['content'] = new_content
+
+        return data
