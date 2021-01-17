@@ -9,6 +9,6 @@ setup(name='CB_ModernAPI',
       author_email='leynaic.brisse@gmail.com',
       packages=['cb_wrapper'],
       install_requires=[
-          'pytest'
+          'pytest', 'pyyaml'
       ]
       )
