@@ -63,6 +63,7 @@ class APIModern:
         """
         for key, data in self.files.items():
             self.files[key] = self.json_to_str(data)
+            self.files[key] = self.str_to_json(data)
 
     @staticmethod
     def json_to_str(data):
@@ -82,7 +83,6 @@ class APIModern:
                     result.append('{')
                 flat(value)
                 result.append('},')
-
             # If value is an array
             elif type(value) is list:
                 if add_double_points:
@@ -91,7 +91,6 @@ class APIModern:
                     result.append('[')
                 flat(value)
                 result.append('],')
-
             # Else the value is a string
             else:
                 result.append(':')
@@ -117,3 +116,36 @@ class APIModern:
         data['content'] = result
 
         return data
+
+    @staticmethod
+    def str_to_json(data):
+        """
+        Build the json from the string list
+        :param data: The data
+        :return:
+        """
+        result = ""
+        for content in data['content']:
+            if content in (':{', '{', '},', '}', ':[', '[', ']', '],', ':', ','):
+                result += content
+            else:
+                result += '"' + content + '"'
+
+        replace_dict = ((',}', '}'), (',]', ']'), ('\r', ''), ('\n', ''), (',:', ','), ('[:', '['))
+        for char_from, char_to in replace_dict:
+            result = result.replace(char_from, char_to)
+
+        data['content'] = json.loads(result)
+
+        return data
+
+
+"""
+        replace_dict = (
+            ('{"}', '{}'), ('["]', '[]'), (',"],"}', ']}'), ('["{', '[{'),
+            (',"]', '],'), (',"[', ',['), ('],"]', ']]'), ('},]', '}]'),
+            ('},"{', '}, {'), ('{"{', '{{'), (',,', ','), ('},}', '}}')
+        )
+        for from_char, to_char in replace_dict:
+            new_json = new_json.replace(from_char, to_char)
+"""
