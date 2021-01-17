@@ -39,6 +39,7 @@ class APIModern:
 
         # Read all files to save their content
         self.read_files(files)
+        self._prepare_for_api()
 
     def read_files(self, files):
         """
@@ -54,3 +55,65 @@ class APIModern:
                     }
             except FileNotFoundError:
                 raise FileNotFoundError("The provided JSON file path is not correct.")
+
+    def _prepare_for_api(self):
+        """
+        For each files get the list of string from the json
+        :return:
+        """
+        for key, data in self.files.items():
+            self.files[key] = self.json_to_str(data)
+
+    @staticmethod
+    def json_to_str(data):
+        """
+        Parse json to string list
+        :param data: The data of file
+        :return: The new parsed data
+        """
+        result = []
+
+        def insert_value(value, add_double_points):
+            # If value is object
+            if type(value) is dict:
+                if add_double_points:
+                    result.append(':{')
+                else:
+                    result.append('{')
+                flat(value)
+                result.append('},')
+
+            # If value is an array
+            elif type(value) is list:
+                if add_double_points:
+                    result.append(':[')
+                else:
+                    result.append('[')
+                flat(value)
+                result.append('],')
+
+            # Else the value is a string
+            else:
+                result.append(':')
+                result.append(str(value))
+                result.append(',')
+
+        def flat(_content):
+            # If content is an array
+            if type(_content) is list:
+                for value in _content:
+                    insert_value(value, False)
+            # Else content is an object
+            else:
+                for key, value in _content.items():
+                    # Append key associated to the value
+                    result.append(key)
+                    insert_value(value, True)
+
+        result.append('{' if type(data['content']) is dict else '[')
+        flat(data['content'])
+        result.append('}' if type(data['content']) is dict else ']')
+
+        data['content'] = result
+
+        return data
