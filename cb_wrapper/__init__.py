@@ -36,7 +36,7 @@ class APIModern:
         :param target: The target language
         :param files: The list of files to translate
         :param source: The source language (optional)
-        :param path:
+        :param path: The destination path of translated files (optional)
         :return:
         """
         if not isinstance(files, (str, list, tuple)):
@@ -51,6 +51,8 @@ class APIModern:
         self._call_api(target, source)
         self._prepare_for_files()
         self._write_files_content(target, path)
+        # Reset files dictionary
+        self.files = {}
 
     def _read_files(self, files):
         """
@@ -75,7 +77,6 @@ class APIModern:
         """
         for filename, data in self.files.items():
             for lang in self.config['lang']:
-                print(lang)
                 filename = filename.replace(lang, target)
 
             if path is not None:
@@ -201,7 +202,7 @@ class APIModern:
     def add_syntax(data):
         """
         Add syntax previously removed into the list
-        :return:
+        :return: The data
         """
         for index, content in data['syntax_memories'].items():
             data['content'].insert(index, content)
@@ -213,7 +214,7 @@ class APIModern:
     def divide_list(data):
         """
         Divide a long list to multiple list to call API
-        :return:
+        :return: The data
         """
         max_list_size = 128
 
@@ -234,7 +235,7 @@ class APIModern:
     def concat_list(data):
         """
         Concat all list to one list
-        :return:
+        :return: The data
         """
         data['content'] = [content for contents in data['content'] for content in contents]
 
