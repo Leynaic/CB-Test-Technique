@@ -1,6 +1,9 @@
 # -*- coding: utf-8 -*-
+import os
+
 import yaml
 import json
+import requests
 
 
 class APIModern:
@@ -10,6 +13,9 @@ class APIModern:
 
         if self.config.get('api_key') is None:
             raise Exception('An API Key must be defined in the configuration file.')
+
+        if self.config.get('lang') is None:
+            self.config['lang'] = ['fr', 'en', 'de']
 
     @staticmethod
     def _load_config():
@@ -24,11 +30,13 @@ class APIModern:
         except FileNotFoundError:
             return {}
 
-    def translate(self, target, files):
+    def translate(self, target, files, source=None, path=None):
         """
         Call all functions to proceed with the translation
         :param target: The target language
         :param files: The list of files to translate
+        :param source: The source language (optional)
+        :param path:
         :return:
         """
         if not isinstance(files, (str, list, tuple)):
@@ -38,10 +46,13 @@ class APIModern:
         files = [files] if isinstance(files, str) else files
 
         # Read all files to save their content
-        self.read_files(files)
+        self._read_files(files)
         self._prepare_for_api()
+        self._call_api(target, source)
+        self._prepare_for_files()
+        self._write_files_content(target, path)
 
-    def read_files(self, files):
+    def _read_files(self, files):
         """
         Read each files to extract their content into dictionaries
         :param files: The list of files to read
@@ -55,6 +66,23 @@ class APIModern:
                     }
             except FileNotFoundError:
                 raise FileNotFoundError("The provided JSON file path is not correct.")
+
+    def _write_files_content(self, target, path=None):
+        """
+        Write the new files previously translated
+        :param target: The target language to rename the file
+        :return:
+        """
+        for filename, data in self.files.items():
+            for lang in self.config['lang']:
+                print(lang)
+                filename = filename.replace(lang, target)
+
+            if path is not None:
+                filename = os.path.join(path, filename)
+
+            with open(filename, 'w', encoding='utf-8') as file:
+                file.write(json.dumps(data['content'], ensure_ascii=False, indent=2))
 
     def _prepare_for_api(self):
         """
@@ -211,3 +239,42 @@ class APIModern:
         data['content'] = [content for contents in data['content'] for content in contents]
 
         return data
+
+    def _call_api(self, target, source=None):
+        """
+        Process the API call to translate
+        :param target: The target language
+        :param source: The source language (optional)
+        :return:
+        """
+        url = 'https://api.modernmt.com/translate'
+        headers = {
+            'MMT-ApiKey': self.config['api_key'],
+            'X-HTTP-Method-Override': 'GET',
+            'Content-Type': 'application/json'
+        }
+
+        payload = {
+            'target': target,
+            'priority': 'background',
+        }
+
+        if source is not None:
+            payload['source'] = source
+
+        for key, data in self.files.items():
+            new_content = []
+            for q in data['content']:
+                payload['q'] = q
+                r = requests.post(url, json=payload, headers=headers)
+
+                r_json = r.json()
+
+                if r.status_code != 200:
+                    raise Exception(r.status_code, r_json['error'])
+
+                # Extract the translation of response data and build the list of the translated text
+                translation = [translated_data['translation'] for translated_data in r_json['data']]
+                new_content.append(translation)
+
+            self.files[key]['content'] = new_content
