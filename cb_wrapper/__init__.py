@@ -63,6 +63,7 @@ class APIModern:
         """
         for key, data in self.files.items():
             self.files[key] = self.json_to_str(data)
+            self.files[key] = self.remove_syntax(data)
             self.files[key] = self.str_to_json(data)
 
     @staticmethod
@@ -139,13 +140,21 @@ class APIModern:
 
         return data
 
+    @staticmethod
+    def remove_syntax(data):
+        """
+        Remove the syntax to get a lighter list for the API call
+        :return: The data with sanitize content and memories for syntax
+        """
+        data['syntax_memories'] = {}
+        new_content = []
 
-"""
-        replace_dict = (
-            ('{"}', '{}'), ('["]', '[]'), (',"],"}', ']}'), ('["{', '[{'),
-            (',"]', '],'), (',"[', ',['), ('],"]', ']]'), ('},]', '}]'),
-            ('},"{', '}, {'), ('{"{', '{{'), (',,', ','), ('},}', '}}')
-        )
-        for from_char, to_char in replace_dict:
-            new_json = new_json.replace(from_char, to_char)
-"""
+        for index, content in enumerate(data['content']):
+            if content in (':{', '{', '},', '}', ':', ',', ':[', '[', '],', ']'):
+                data['syntax_memories'][index] = content
+            else:
+                new_content.append(content)
+
+        data['content'] = new_content
+
+        return data
