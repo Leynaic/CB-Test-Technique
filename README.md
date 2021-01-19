@@ -8,11 +8,11 @@ from cb_wrapper import APIModern
 
 files = (os.path.relpath('file_en.json'), os.path.relpath('file2_en.json'))
 
-  try:
-      api = APIModern()
-      api.translate('fr', files, source='en', path=os.path.relpath('translated'))
-  except Exception as e:
-      print(e)
+try:
+    api = APIModern()
+    api.translate('fr', files, source='en', path=os.path.relpath('translated'))
+except Exception as e:
+    print(e)
 ```
 
 Les fichiers traduits se retrouverons dans le même dossier que ceux passés en paramètre. \
