@@ -1,6 +1,7 @@
 # CB Wrapper
 **CB Wrapper** est un module python vous permettant de traduire des fichiers JSON à l'aide de l'API ModernMT.
 
+![Python package](https://github.com/Leynaic/CB-Test-Technique/workflows/Python%20package/badge.svg?branch=main)
 
 ## Exemple d'utilisation
 ```python
