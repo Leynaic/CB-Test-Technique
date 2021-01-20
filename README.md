@@ -28,6 +28,12 @@ Pour utiliser CB Wrapper vous devez clôner le dépôt, et utiliser la commande 
 pip install -e le_chemin_du_depot
 ```
 
+Le module est aussi disponible sur PyPI:
+
+```console
+pip install CB-ModernAPI
+```
+
 N'oubliez pas de créer un fichier `config.yaml` et insérer la ligne suivante :
 ```yaml
 api_key: "change me"
