@@ -7,12 +7,20 @@ import requests
 
 
 class APIModern:
+
+    syntax = (':{', '{', '},', '}', ':[', '[', ']', '],', ':', ',')
+
+    exception_messages = {
+        'api_missing': 'An API Key must be defined in the configuration file.',
+        'not_found': 'The provided JSON file path is not correct.'
+    }
+
     def __init__(self):
         self.files = {}
         self.config = self._load_config()
 
         if self.config.get('api_key') is None:
-            raise Exception('An API Key must be defined in the configuration file.')
+            raise Exception(self.exception_messages['api_missing'])
 
         if self.config.get('lang') is None:
             self.config['lang'] = ['fr', 'en', 'de']
@@ -37,7 +45,7 @@ class APIModern:
         :param files: The list of files to translate
         :param source: The source language (optional)
         :param path: The destination path of translated files (optional)
-        :return:
+        :return: The list of translated file
         """
         if not isinstance(files, (str, list, tuple)):
             raise TypeError("Files must be a string or a list.")
@@ -50,9 +58,11 @@ class APIModern:
         self._prepare_for_api()
         self._call_api(target, source)
         self._prepare_for_files()
-        self._write_files_content(target, path)
+        translated_files = self._write_files_content(target, path)
         # Reset files dictionary
         self.files = {}
+
+        return translated_files
 
     def _read_files(self, files):
         """
@@ -67,14 +77,15 @@ class APIModern:
                         'content': json.load(json_content)
                     }
             except FileNotFoundError:
-                raise FileNotFoundError("The provided JSON file path is not correct.")
+                raise FileNotFoundError(self.exception_messages['not_found'])
 
     def _write_files_content(self, target, path=None):
         """
         Write the new files previously translated
         :param target: The target language to rename the file
-        :return:
+        :return: The list of translated path files
         """
+        translated_files = []
         for filename, data in self.files.items():
             for lang in self.config['lang']:
                 filename = filename.replace(lang, target)
@@ -83,7 +94,12 @@ class APIModern:
                 filename = os.path.join(path, filename)
 
             with open(filename, 'w', encoding='utf-8') as file:
-                file.write(json.dumps(data['content'], ensure_ascii=False, indent=2))
+                file.write(
+                    json.dumps(data['content'], ensure_ascii=False, indent=2)
+                )
+                translated_files.append(os.path.abspath(filename))
+
+        return translated_files
 
     def _prepare_for_api(self):
         """
@@ -157,8 +173,7 @@ class APIModern:
 
         return data
 
-    @staticmethod
-    def str_to_json(data):
+    def str_to_json(self, data):
         """
         Build the json from the string list
         :param data: The data
@@ -166,12 +181,15 @@ class APIModern:
         """
         result = ""
         for content in data['content']:
-            if content in (':{', '{', '},', '}', ':[', '[', ']', '],', ':', ','):
+            if content in self.syntax:
                 result += content
             else:
                 result += '"' + content + '"'
 
-        replace_dict = ((',}', '}'), (',]', ']'), ('\r', ''), ('\n', ''), (',:', ','), ('[:', '['))
+        replace_dict = (
+            (',}', '}'), (',]', ']'), ('\r', ''),
+            ('\n', ''), (',:', ','), ('[:', '[')
+        )
         for char_from, char_to in replace_dict:
             result = result.replace(char_from, char_to)
 
@@ -179,8 +197,7 @@ class APIModern:
 
         return data
 
-    @staticmethod
-    def remove_syntax(data):
+    def remove_syntax(self, data):
         """
         Remove the syntax to get a lighter list for the API call
         :return: The data with sanitize content and memories for syntax
@@ -189,7 +206,7 @@ class APIModern:
         new_content = []
 
         for index, content in enumerate(data['content']):
-            if content in (':{', '{', '},', '}', ':', ',', ':[', '[', '],', ']'):
+            if content in self.syntax:
                 data['syntax_memories'][index] = content
             else:
                 new_content.append(content)
@@ -224,7 +241,11 @@ class APIModern:
 
         for i in range(0, slice_count):
             begin = max_list_size * i
-            end = begin + max_list_size if begin + max_list_size < length else length
+            if begin + max_list_size < length:
+                end = begin + max_list_size
+            else:
+                end = length
+
             new_content.append(data['content'][begin:end])
 
         data['content'] = new_content
@@ -237,7 +258,9 @@ class APIModern:
         Concat all list to one list
         :return: The data
         """
-        data['content'] = [content for contents in data['content'] for content in contents]
+        data['content'] = [content
+                           for contents in data['content']
+                           for content in contents]
 
         return data
 
@@ -274,8 +297,12 @@ class APIModern:
                 if r.status_code != 200:
                     raise Exception(r.status_code, r_json['error'])
 
-                # Extract the translation of response data and build the list of the translated text
-                translation = [translated_data['translation'] for translated_data in r_json['data']]
+                # Extract the translation of response data
+                # and build the list of the translated text
+                translation = []
+                for translated_data in r_json['data']:
+                    translation.append(translated_data['translation'])
+
                 new_content.append(translation)
 
             self.files[key]['content'] = new_content
